@@ -117,10 +117,12 @@ end
 
 put '/widgets/:id' do
   request.body.rewind
+  body = JSON.parse(request.body.read)
+  puts "newData: #{newData}"
+  
   if authenticated?(body.delete("auth_token"))
     puts "history: #{settings.history}"
-    newData = JSON.parse(request.body.read)
-    puts "newData: #{newData}"
+    newData = body
     if settings.history[params['id']].nil?
       oldDataStr = settings.history[params['id']].gsub(/^data:/, '')
       oldData = oldDataStr ? JSON.parse(oldDataStr) : {} 
