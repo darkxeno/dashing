@@ -115,6 +115,31 @@ post '/widgets/:id' do
   end
 end
 
+put '/widgets/:id' do
+  request.body.rewind
+  if authenticated?(body.delete("auth_token"))
+    puts "history: #{settings.history}"
+    newData = JSON.parse(request.body.read)
+    puts "newData: #{newData}"
+    if settings.history[params['id']].nil?
+      oldDataStr = settings.history[params['id']].gsub(/^data:/, '')
+      oldData = oldDataStr ? JSON.parse(oldDataStr) : {} 
+      if oldData.datasets && newData.datasets?
+        oldData.datasets.each do |oldDataset|
+          newData.datasets.each do |newDataset|
+            newDataset = oldDataset + newDataset
+          end
+        end
+      end
+    end
+    send_event(params['id'], newData)
+    204 # response without entity body
+  else
+    status 401
+    "Invalid API key\n"
+  end
+end
+
 get '/views/:widget?.html' do
   protected!
   tilt_html_engines.each do |suffix, engines|
