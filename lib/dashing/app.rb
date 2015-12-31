@@ -117,23 +117,45 @@ end
 
 put '/widgets/:id' do
   request.body.rewind
-  body = JSON.parse(request.body.read)
-  puts "newData: #{newData}"
-  
+  body = JSON.parse(request.body.read)  
   if authenticated?(body.delete("auth_token"))
-    puts "history: #{settings.history}"
     newData = body
-    if settings.history[params['id']].nil?
+    puts "newData: #{newData}"
+    if settings.history[params['id']]
       oldDataStr = settings.history[params['id']].gsub(/^data:/, '')
-      oldData = oldDataStr ? JSON.parse(oldDataStr) : {} 
-      if oldData.datasets && newData.datasets?
-        oldData.datasets.each do |oldDataset|
-          newData.datasets.each do |newDataset|
-            newDataset = oldDataset + newDataset
+      oldData = oldDataStr ? JSON.parse(oldDataStr) : {}       
+      oldSeries = oldData['datasets'] || oldData['series']
+      newSeries = newData['datasets'] || newData['series']
+      puts "oldSeries: #{oldSeries}"
+      puts "newSeries: #{newSeries}"
+      notFoundSeries = []
+      if oldSeries && newSeries
+        if newData['useSeriesNames']
+          oldSeries.each_with_index do |oldDataset, j|          
+            found = false
+              newSeries.each_with_index do |newDataset, i|  
+                if oldSeries[j] && oldSeries[j]['name'] == newSeries[i]['name']                
+                  newSeries[i]['data'] = oldSeries[j]['data'] + newSeries[i]['data']
+                  found = true
+                end
+              end
+            if !found
+              newSeries.push(oldSeries[j])
+            end      
+          end
+        end
+        else  
+          newSeries.each_with_index do |newDataset, i|
+            if oldSeries[i]
+              newSeries[i]['data'] = oldSeries[i]['data'] + newSeries[i]['data']        
           end
         end
       end
+      puts "result of the merge: #{oldSeries}"
+      settings.history[params['id']] = settings.history[params['id']].gsub(/^data: (.*)/, 'data: '+JSON.generate(newData, quirks_mode: true))
     end
+    puts "sending event: #{params['id']} -> #{newData} "
+    save_history
     send_event(params['id'], newData)
     204 # response without entity body
   else
@@ -178,6 +200,13 @@ def latest_events
   settings.history.inject("") do |str, (id, body)|
     str << body
   end
+end
+
+def save_history  
+  File.open(settings.history_file, 'w') do |f|
+    f.puts settings.history.to_yaml
+  end
+  puts "History saved..."
 end
 
 def first_dashboard
