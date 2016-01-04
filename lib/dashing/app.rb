@@ -115,6 +115,21 @@ post '/widgets/:id' do
   end
 end
 
+delete '/widgets/:id' do
+  request.body.rewind
+  body = JSON.parse(request.body.read)
+  if authenticated?(body.delete("auth_token"))
+    if settings.history[params['id']]
+      settings.history.delete_at(params['id'])
+      save_history
+    end
+    204 # response without entity body
+  else
+    status 401
+    "Invalid API key\n"
+  end
+end
+
 put '/widgets/:id' do
   request.body.rewind
   body = JSON.parse(request.body.read)  
