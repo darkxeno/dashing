@@ -120,7 +120,7 @@ delete '/widgets/:id' do
   body = JSON.parse(request.body.read)
   if authenticated?(body.delete("auth_token"))
     if settings.history[params['id']]
-      settings.history.delete_at(params['id'])
+      settings.history.delete(params['id'])
       save_history
     end
     204 # response without entity body
