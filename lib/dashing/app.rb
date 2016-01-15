@@ -135,14 +135,14 @@ put '/widgets/:id' do
   body = JSON.parse(request.body.read)  
   if authenticated?(body.delete("auth_token"))
     newData = body
-    puts "newData: #{newData}"
+    #puts "newData: #{newData}"
     if settings.history[params['id']]
       oldDataStr = settings.history[params['id']].gsub(/^data:/, '')
       oldData = oldDataStr ? JSON.parse(oldDataStr) : {}       
       oldSeries = oldData['datasets'] || oldData['series']
       newSeries = newData['datasets'] || newData['series']
-      puts "oldSeries: #{oldSeries}"
-      puts "newSeries: #{newSeries}"
+      #puts "oldSeries: #{oldSeries}"
+      #puts "newSeries: #{newSeries}"
       notFoundSeries = []
       if oldSeries && newSeries
         if newData['useSeriesNames']
@@ -166,10 +166,10 @@ put '/widgets/:id' do
           end
         end
       end
-      puts "result of the merge: #{oldSeries}"
+      #puts "result of the merge: #{oldSeries}"
       settings.history[params['id']] = settings.history[params['id']].gsub(/^data: (.*)/, 'data: '+JSON.generate(newData, quirks_mode: true))
     end
-    puts "sending event: #{params['id']} -> #{newData} "
+    #puts "sending event: #{params['id']} -> #{newData} "
     save_history
     send_event(params['id'], newData)
     204 # response without entity body
